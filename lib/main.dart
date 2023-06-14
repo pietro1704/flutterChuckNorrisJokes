@@ -8,8 +8,8 @@ void main() {
   runApp(const MyApp());
 }
 
-final class NetworkManager {
-  Future<Joke> fetchJoke() async {
+final class NetworkManager with ChangeNotifier {
+  Future<Joke> _fetchJoke() async {
     final response =
         await http.get(Uri.parse('https://api.chucknorris.io/jokes/random'));
     if (response.statusCode == 200) {
@@ -17,6 +17,15 @@ final class NetworkManager {
     } else {
       throw Exception('Failed to load Joke');
     }
+  }
+
+  List<Future<Joke>> reloadJokes({int amount = 10}) {
+    List<Future<Joke>> futureJokes = [];
+    for (int i = 0; i < amount; i++) {
+      var futureJoke = _fetchJoke();
+      futureJokes.add(futureJoke);
+    }
+    return futureJokes;
   }
 }
 
@@ -42,21 +51,19 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late List<Future<Joke>> futureJokes;
+  List<Future<Joke>> jokesList = [];
   final NetworkManager _networkManager = NetworkManager();
 
   @override
   void initState() {
     super.initState();
-    reloadJokes();
+    _reloadJokes();
   }
 
-  void reloadJokes({int amount = 10}) {
-    futureJokes = [];
-    for (int i = 0; i < amount; i++) {
-      final joke = _networkManager.fetchJoke();
-      futureJokes.add(joke);
-    }
+  void _reloadJokes() async {
+    setState(() {
+      jokesList = _networkManager.reloadJokes();
+    });
   }
 
   @override
@@ -64,33 +71,61 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'Fetch Data Example',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
       ),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Fetch Data Example'),
+          title: const Text('Chuck Norris Jokes'),
         ),
-        body: Center(
-          child: FutureBuilder<List<Joke>>(
-            future: Future.wait(futureJokes),
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                 ListView.builder(
-    itemCount: futureJokes.length,
-    itemBuilder: (BuildContext context, int index) {
-      return SizedBox(
-        height: 50,
-        child: Center(child: Text(snapshot.data![index].value)),
-      );
-    }
-    }
-              } else if (snapshot.hasError) {
-                return Text('${snapshot.error}');
-              }
-              // By default, show a loading spinner.
-              return const CircularProgressIndicator();
-            },
-          ),
+        body: ListView.builder(
+            itemCount: jokesList.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: FutureBuilder(
+                    future: jokesList[index],
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return JokeWidget(jokeText: snapshot.data!.value);
+                      } else if (snapshot.hasError) {
+                        return Text('${snapshot.error}');
+                      }
+                      return CircularProgressIndicator();
+                    }),
+              );
+            }),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            _reloadJokes();
+          },
+          child: const Icon(Icons.refresh),
+        ),
+      ),
+    );
+  }
+}
+
+class JokeWidget extends StatelessWidget {
+  const JokeWidget({
+    super.key,
+    required this.jokeText,
+  });
+
+  final String jokeText;
+
+  @override
+  Widget build(BuildContext context) {
+    var color = Theme.of(context).colorScheme;
+    var style = Theme.of(context).textTheme.displaySmall!.copyWith(
+          color: color.onPrimary,
+        );
+    return Card(
+      color: color.primary,
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Text(
+          jokeText,
+          style: style,
         ),
       ),
     );
