@@ -85,12 +85,17 @@ class _MyAppState extends State<MyApp> {
                 child: FutureBuilder(
                     future: jokesList[index],
                     builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        return JokeWidget(jokeText: snapshot.data!.value);
-                      } else if (snapshot.hasError) {
-                        return Text('${snapshot.error}');
+                      switch (snapshot.connectionState) {
+                        case ConnectionState.done:
+                          if (snapshot.hasData) {
+                            return JokeWidget(jokeText: snapshot.data!.value);
+                          } else if (snapshot.hasError) {
+                            return Text('${snapshot.error}');
+                          }
+                          return const CircularProgressIndicator();
+                        default:
+                          return const CircularProgressIndicator();
                       }
-                      return CircularProgressIndicator();
                     }),
               );
             }),
