@@ -77,34 +77,75 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Chuck Norris Jokes'),
         ),
-        body: ListView.builder(
-            itemCount: jokesList.length,
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: FutureBuilder(
-                    future: jokesList[index],
-                    builder: (context, snapshot) {
-                      switch (snapshot.connectionState) {
-                        case ConnectionState.done:
-                          if (snapshot.hasData) {
-                            return JokeWidget(jokeText: snapshot.data!.value);
-                          } else if (snapshot.hasError) {
-                            return Text('${snapshot.error}');
-                          }
-                          return const CircularProgressIndicator();
-                        default:
-                          return const CircularProgressIndicator();
-                      }
-                    }),
-              );
-            }),
+        body: Container(
+          margin: const EdgeInsets.symmetric(vertical: 20),
+          child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: jokesList.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: JokesListFutureBuilder(joke: jokesList[index]),
+                );
+              }),
+        ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             _reloadJokes();
           },
           child: const Icon(Icons.refresh),
         ),
+      ),
+    );
+  }
+}
+
+class JokesListFutureBuilder extends StatelessWidget {
+  const JokesListFutureBuilder({
+    super.key,
+    required this.joke,
+  });
+
+  final Future<Joke> joke;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+        future: joke,
+        builder: (context, snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.done:
+              if (snapshot.hasData) {
+                return JokeWidget(jokeText: snapshot.data!.value);
+              } else if (snapshot.hasError) {
+                return Text('${snapshot.error}');
+              }
+              return const CircularIndicator();
+            default:
+              return const CircularIndicator();
+          }
+        });
+  }
+}
+
+class CircularIndicator extends StatelessWidget {
+  const CircularIndicator({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          SizedBox(
+            height: 100.0,
+            width: 100.0,
+            child: CircularProgressIndicator(),
+          ),
+        ],
       ),
     );
   }
@@ -121,7 +162,7 @@ class JokeWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var color = Theme.of(context).colorScheme;
-    var style = Theme.of(context).textTheme.displaySmall!.copyWith(
+    var style = Theme.of(context).textTheme.bodyLarge!.copyWith(
           color: color.onPrimary,
         );
     return Card(
