@@ -31,60 +31,69 @@ class _JokeScreenState extends State<JokeScreen> {
   @override
   Widget build(BuildContext context) {
     final comments = widget.joke.comments;
+    const sizedBox = SizedBox(height: 40);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Joke'),
       ),
       body: Center(
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           children: <Widget>[
             Padding(
               padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Text(
-                    widget.joke.value,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+              child: Padding(
+                padding: const EdgeInsets.all(40.0),
+                child: Column(
+                  children: [
+                    Text(
+                      widget.joke.value,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  TextField(
-                    focusNode: _textFieldFocus,
-                    controller: _textController,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'Enter a comment:',
+                    sizedBox,
+                    TextField(
+                      focusNode: _textFieldFocus,
+                      controller: _textController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter a comment:',
+                      ),
+                      onSubmitted: (value) {
+                        setState(
+                          () {
+                            if (value == '') {
+                              return;
+                            }
+                            final comment = Comment(
+                              commentString: value,
+                              date: DateTime.now(),
+                            );
+                            _commentManager.addComment(
+                              widget.joke,
+                              comment,
+                            );
+                            _textController.clear();
+                            _textFieldFocus.requestFocus();
+                          },
+                        );
+                      },
                     ),
-                    onSubmitted: (value) {
-                      setState(
-                        () {
-                          if (value == '') {
-                            return;
-                          }
-                          final comment = Comment(
-                            commentString: value,
-                            date: DateTime.now(),
-                          );
-                          _commentManager.addComment(
-                            widget.joke,
-                            comment,
-                          );
-                          _textController.clear();
-                          _textFieldFocus.requestFocus();
-                        },
-                      );
-                    },
-                  ),
-                  ListView.builder(
-                    scrollDirection: Axis.vertical,
-                    shrinkWrap: true,
-                    itemCount: widget.joke.comments.length,
-                    itemBuilder: (context, index) {
-                      return CommentCard(comment: comments[index]);
-                    },
-                  ),
-                ],
+                    sizedBox,
+                    ListView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      scrollDirection: Axis.vertical,
+                      shrinkWrap: true,
+                      itemCount: widget.joke.comments.length,
+                      itemBuilder: (context, index) {
+                        return CommentCard(comment: comments[index]);
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
